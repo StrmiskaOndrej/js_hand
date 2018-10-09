@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="cs"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
+    <title>Javascript - Hand</title>
+    <style>
+        /* reset value --> */
+        *{vertical-align:baseline;font-weight:inherit;font-family:inherit;font-style:inherit;font-size:100%;border:0 none;outline:0;padding:0;margin:0}
+        h1,h2,h3,h4,h5,h6,p,pre,blockquote,form,ul,ol,dl{margin:0}
+        /* reset value --// */
+        svg
+        {
+            display: block;
+            background-color: #ccc;
+        }
+        polyline
+        {
+            stroke: black;
+            stroke-width: 13;
+        }
+        circle
+        {
+            fill: green;
+        }
+    </style>
+
+    <!-- Připojení externí knihovny JQuery -->
+    <script type="text/javascript" src="Javascript%20-%20Hand_soubory/jquery.js"></script>
+    <script type="text/javascript">
+        /* Třída Hand */
+        function Hand() 
+		{
+            // ziska rozmery prohlizece, kvuli velikosti svg a ruky - zachovani responsivity
+            var w = $(window).width();
+            var h = $(window).height();
+            var nalezeno = false;
+            
+            // inicializace proměnných
+            this.init = function()
+            {
+                $("svg").css("width", w).css("height", h);
+                
+                // nastaveni delky kosti na zaklade velikosti okna prohlizece, pokud bude sirsi tak vezme vysku, jinak sirku
+                if (w > h)
+                {
+                    delkaPaze = delkaPredlokti = h/3;
+                    delkaPrstu = h/8;
+                }
+                else
+                {
+                    delkaPaze = delkaPredlokti = w/3;
+                    delkaPrstu = w/8;
+                }
+                
+                // zakladni pozice ramene 
+                ramenoX = w * 0.5; //x pozice ramena
+                ramenoY = h * 0.9; //y pozice ramena
+                
+                //minimalni a maximalni mozne uhly ramene, loktu a zapesti
+                uhelRamenoMin = -30; 
+                uhelRamenoMax = 150;
+                uhelLoketMin = 0;
+                uhelLoketMax = 160;
+                uhelZapestiMin = -55;
+                uhelZapestiMax = 55;
+            };
+
+			this.draw = function(x, y) 
+			{
+                nalezeno = false; //promenna nalezeno, ktera ukazuje, zda ruka dosahla na pozadovany bod
+
+                for (i = uhelRamenoMin; i < uhelRamenoMax; i++) //projede vsechny mozne uhly ramena
+                { 
+                    var loketX = ramenoX + delkaPaze * Math.cos(i / 360 * 2 * Math.PI); //vypocet pozice loktu
+                    var loketY = ramenoY - delkaPaze * Math.sin(i / 360 * 2 * Math.PI);
+
+                    for (j = uhelLoketMin; j < uhelLoketMax; j++)  //projede vsechny mozne uhly loktu
+                    { 
+                        var uhel2 = i + j; //uhel loktu, sklada se z aktualniho uhlu ramene a loktu
+                        var zapestiX = loketX + delkaPredlokti * Math.cos(uhel2 / 360 * 2 * Math.PI); //vypocet pozice zapesti
+                        var zapestiY = loketY - delkaPredlokti * Math.sin(uhel2 / 360 * 2 * Math.PI);
+
+                        for (k = uhelZapestiMin; k < uhelZapestiMax; k++)  //projede vsechny mozne uhly zapesti
+                        { 
+                            var uhel3 = k + uhel2; //uhel zapesti, sklada se z aktualniho uhlu loktu a zapesti 
+                            var konecPrstuX = zapestiX + delkaPrstu * Math.cos(uhel3 / 360 * 2 * Math.PI); //vypocet pozice konecku prstu
+                            var konecPrstuY = zapestiY - delkaPrstu * Math.sin(uhel3 / 360 * 2 * Math.PI);
+
+                            if (((konecPrstuX - x <= 5) && (konecPrstuX - x >= -5)) && ((konecPrstuY - y <= 5) && (konecPrstuY - y >= -5))) //testuje zda pozice konecku prstu shoduje s pozadovanou hodnotou s toleranci 5px
+                            { 
+                                nalezeno = true; //pozice prstu nalezena, prestava hledat dalsi pozice
+                                $("#kP").attr("points", ramenoX + ',' + ramenoY + ' ' + loketX + ',' + loketY);
+                                $("#loket").attr("cx", loketX).attr("cy", loketY);
+                                $("#kL").attr("points", loketX + ',' + loketY + ' ' + zapestiX + ',' + zapestiY);
+                                $("#zapesti").attr("cx", zapestiX).attr("cy", zapestiY);
+                                $("#kS").attr("points", zapestiX + ',' + zapestiY + ' ' + konecPrstuX + ',' + konecPrstuY);
+                                $("#prst").attr("cx", konecPrstuX).attr("cy", konecPrstuY);
+                                break;
+                            }
+                        }
+                        if (nalezeno) break;
+                    }
+                    if (nalezeno) break;
+                }
+			}
+        }
+        
+        // po načtení dokumentu vytvori novou instanci tridy Hand
+        $(document).ready(function() 
+        {
+            var hand = new Hand();
+            // inicializace pocatecniho nastaveni ruky, naplnění proměnných a nastavení velikosti svg
+            hand.init();
+            
+            // při pohnutí myši vykresli ruku v daném době
+            $(document).on('mousemove',function(e)
+            {
+                hand.draw(e.pageX, e.pageY);
+            });
+        });  
+    </script>
+</head>
+
+<body>
+    <svg style="width: 1536px; height: 728px;">
+        <polyline id="kP" points="768,655.2 910.6358878896401,458.8785426983461"></polyline>
+        <polyline id="kL" points="910.6358878896401,458.8785426983461 681.1900468775392,379.87400388340944"></polyline>
+        <polyline id="kS" points="681.1900468775392,379.87400388340944 593.7152325471521,354.7910045040625"></polyline>
+        <circle id="rameno" cx="50%" cy="90%" r="12"></circle>
+        <circle id="loket" cx="910.6358878896401" cy="458.8785426983461" r="10"></circle>
+        <circle id="zapesti" cx="681.1900468775392" cy="379.87400388340944" r="10"></circle>
+        <circle id="prst" cx="593.7152325471521" cy="354.7910045040625" r="8"></circle>
+    </svg>
+
+
+</body></html>
